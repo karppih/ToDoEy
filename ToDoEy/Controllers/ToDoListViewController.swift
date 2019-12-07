@@ -12,6 +12,12 @@ import CoreData
 class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
+    var selectedCategory: Category? {
+           didSet{
+               loadItems()
+           }
+       }
+       
     
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     
@@ -37,7 +43,7 @@ class ToDoListViewController: UITableViewController {
 //        } else {
 //            print("error loading item list from user defaults")
 //        }
-        loadItems()
+//        loadItems()
         loadTable()
         
     }
@@ -120,6 +126,7 @@ class ToDoListViewController: UITableViewController {
 //            let item = Item(context: self.context)
             item.title = alertTextField.text!
             item.done = false
+            item.parentCategory = self.selectedCategory
             textField = alertTextField
             print("Add text field")
             print(item.title)
@@ -141,7 +148,18 @@ class ToDoListViewController: UITableViewController {
     
     func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
         
-//        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let predicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let existingPredicate = request.predicate {
+            let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate, existingPredicate])
+            request.predicate = combinedPredicate
+            
+        } else {
+            
+            request.predicate = predicate
+        }
+        
         do {
             itemArray = try context.fetch(request)
         } catch {
